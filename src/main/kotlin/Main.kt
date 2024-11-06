@@ -9,12 +9,16 @@ import okhttp3.Request
 import java.io.IOException
 import java.util.regex.Pattern
 
+val client = OkHttpClient()
+const val token = "your token here"
+const val BaseUrl = "https://api.github.com"
+
 fun main() = runBlocking {
-    val repos = getJavaRepos()
+    val repos = getJavaRepos(BaseUrl)
     val allClassNames = mutableListOf<String>()
 
     repos.map { repo ->
-        async { getJavaFiles(repo) }
+        async { getJavaFiles(repo, BaseUrl) }
     }.awaitAll().flatten().forEach { classUrl ->
         val lastSegment = classUrl.substringAfterLast("/").removeSuffix(".java")
         allClassNames.add(lastSegment)
@@ -27,13 +31,11 @@ fun main() = runBlocking {
         println("$word: $count")
     }
 }
-val client = OkHttpClient()
-const val token = "your token here"
 
-fun getJavaRepos() : List<String> {
+fun getJavaRepos(baseUrl : String): List<String> {
     val client = OkHttpClient()
     val repos = mutableListOf<String>()
-    val url = "https://api.github.com/search/repositories?q=language:Java&sort=stars&order=desc&per_page=100"
+    val url = baseUrl + "/search/repositories?q=language:Java&sort=stars&order=desc&per_page=100"
     val request = Request.Builder()
         .url(url)
         .header("Authorization", "token $token")
@@ -47,16 +49,18 @@ fun getJavaRepos() : List<String> {
         val items = jsonObject.getAsJsonArray("items")
 
         for (item in items) {
-            val repo = item.asJsonObject.get("full_name").asString
+            val repo = item.asJsonObject["full_name"].asString
             repos.add(repo)
         }
 
     }
-    return repos;
+    return repos
 }
-fun getJavaFiles(repo: String): List<String> {
+
+fun getJavaFiles(repo: String, baseUrl: String): List<String> {
     val javaFiles = mutableListOf<String>()
-    val url = "https://api.github.com/repos/$repo/git/trees/main?recursive=1"
+    val url = "$baseUrl/repos/$repo/git/trees/main?recursive=1" // Construct the URL using baseUrl
+
     val request = Request.Builder()
         .url(url)
         .header("Authorization", "token $token")
@@ -69,7 +73,7 @@ fun getJavaFiles(repo: String): List<String> {
             val tree = jsonObject.getAsJsonArray("tree")
 
             for (element in tree) {
-                val path = element.asJsonObject.get("path").asString
+                val path = element.asJsonObject["path"].asString
                 if (path.endsWith(".java")) {
                     javaFiles.add(path)
                 }
@@ -78,6 +82,7 @@ fun getJavaFiles(repo: String): List<String> {
     }
     return javaFiles
 }
+
 
 fun analyzeWordPopularity(classNames: List<String>): Map<String, Int> {
     val wordCount = mutableMapOf<String, Int>()
