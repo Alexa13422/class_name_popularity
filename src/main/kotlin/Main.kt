@@ -35,7 +35,7 @@ fun main() = runBlocking {
 fun getJavaRepos(baseUrl : String): List<String> {
     val client = OkHttpClient()
     val repos = mutableListOf<String>()
-    val url = baseUrl + "/search/repositories?q=language:Java&sort=stars&order=desc&per_page=100"
+    val url = "$baseUrl/search/repositories?q=language:Java&sort=stars&order=desc&per_page=100"
     val request = Request.Builder()
         .url(url)
         .header("Authorization", "token $token")
@@ -59,8 +59,7 @@ fun getJavaRepos(baseUrl : String): List<String> {
 
 fun getJavaFiles(repo: String, baseUrl: String): List<String> {
     val javaFiles = mutableListOf<String>()
-    val url = "$baseUrl/repos/$repo/git/trees/main?recursive=1" // Construct the URL using baseUrl
-
+    val url = "$baseUrl/repos/$repo/git/trees/main?recursive=1"
     val request = Request.Builder()
         .url(url)
         .header("Authorization", "token $token")
